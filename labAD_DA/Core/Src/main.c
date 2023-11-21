@@ -47,6 +47,8 @@ DAC_HandleTypeDef hdac1;
 UART_HandleTypeDef hlpuart1;
 
 /* USER CODE BEGIN PV */
+uint16_t DAC_Output=0;
+
 struct _ADC_tag
 {
 ADC_ChannelConfTypeDef Config;
@@ -72,6 +74,7 @@ static void MX_ADC1_Init(void);
 static void MX_DAC1_Init(void);
 /* USER CODE BEGIN PFP */
 void ADC_Read_blocking();
+void DAC_Update();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -112,6 +115,8 @@ int main(void)
   MX_DAC1_Init();
   /* USER CODE BEGIN 2 */
   HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
+  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 2048);
+  HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -122,6 +127,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 	ADC_Read_blocking();
+	DAC_Update();
   }
   /* USER CODE END 3 */
 }
@@ -387,6 +393,15 @@ void ADC_Read_blocking()
 	HAL_ADC_PollForConversion(&hadc1, 100);
 	ADC1_Channel.data = HAL_ADC_GetValue(&hadc1);
 	HAL_ADC_Stop(&hadc1);
+}
+void DAC_Update()
+{
+	static uint32_t timeStamp =0;
+	if(HAL_GetTick()>timeStamp)
+	{
+		timeStamp = HAL_GetTick()+500;
+		HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, DAC_Output);
+	}
 }
 /* USER CODE END 4 */
 
