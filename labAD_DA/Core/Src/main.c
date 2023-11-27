@@ -49,9 +49,12 @@ UART_HandleTypeDef hlpuart1;
 /* USER CODE BEGIN PV */
 uint16_t DAC_Output_Raw = 0;
 float DAC_Output_mV = 0;
-float u16tof = 0;
-float calf = 0;
-int F2I = 0;
+float DAC_u16tof = 0;
+float DAC_calf = 0;
+int DAC_F2I = 0;
+
+float ADC_mV = 0;
+float ADC_u16tof = 0;
 
 struct _ADC_tag
 {
@@ -398,9 +401,13 @@ void ADC_Read_blocking()
 	ADC1_Channel.data = HAL_ADC_GetValue(&hadc1);
 	HAL_ADC_Stop(&hadc1);
 
-	u16tof = ADC1_Channel.data;
-	calf = (4095*(u16tof/1023));
-	F2I = calf;
+	ADC_u16tof = ADC1_Channel.data;
+	ADC_mV = ADC_u16tof * 3.223;
+
+
+	DAC_u16tof = ADC1_Channel.data;
+	DAC_calf = (4095*(DAC_u16tof/1023));
+	DAC_F2I = DAC_calf;
 }
 void DAC_Update()
 {
@@ -408,8 +415,8 @@ void DAC_Update()
 	if(HAL_GetTick()>timeStamp)
 	{
 		timeStamp = HAL_GetTick()+500;
-		DAC_Output_Raw = F2I;
-		DAC_Output_mV = F2I * 0.8 ;
+		DAC_Output_Raw = DAC_F2I;
+		DAC_Output_mV = DAC_F2I * 0.805 ;
 		HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, DAC_Output_Raw);
 
 	}
