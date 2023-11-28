@@ -53,6 +53,12 @@ float DAC_u16tof = 0;
 float DAC_calf = 0;
 int DAC_F2I = 0;
 
+float Pre_DAC_Raw = 0;
+float Pre_DAC_mV = 0;
+float u16tof_DAC = 0;
+int ftoi_DAC = 0;
+
+
 float ADC_mV = 0;
 float ADC_u16tof = 0;
 
@@ -82,6 +88,7 @@ static void MX_DAC1_Init(void);
 /* USER CODE BEGIN PFP */
 void ADC_Read_blocking();
 void DAC_Update();
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -402,25 +409,57 @@ void ADC_Read_blocking()
 	HAL_ADC_Stop(&hadc1);
 
 	ADC_u16tof = ADC1_Channel.data;
-	ADC_mV = ADC_u16tof * 3.223;
+	ADC_mV = ADC_u16tof * 3.2;
 
 
 	DAC_u16tof = ADC1_Channel.data;
 	DAC_calf = (4095*(DAC_u16tof/1023));
 	DAC_F2I = DAC_calf;
+
 }
+
+
 void DAC_Update()
 {
 	static uint32_t timeStamp =0;
 	if(HAL_GetTick()>timeStamp)
 	{
-		timeStamp = HAL_GetTick()+500;
-		DAC_Output_Raw = DAC_F2I;
-		DAC_Output_mV = DAC_F2I * 0.805 ;
-		HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, DAC_Output_Raw);
+		timeStamp = HAL_GetTick()+750;
 
+		if (DAC_Output_Raw != Pre_DAC_Raw)
+		{
+			u16tof_DAC = DAC_Output_Raw;
+			DAC_Output_mV = 3.3*(u16tof_DAC/4095)*1000;
+		}
+		else if (DAC_Output_mV != Pre_DAC_mV)
+		{
+			ftoi_DAC = 4095*(DAC_Output_mV/3300);
+			DAC_Output_Raw = ftoi_DAC;
+		}
+		Pre_DAC_Raw = DAC_Output_Raw;
+		Pre_DAC_mV = DAC_Output_mV;
+
+
+		HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, DAC_Output_Raw);
 	}
 }
+
+
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+
+	if(GPIO_Pin == GPIO_PIN_13)
+	{
+		DAC_Output_Raw = DAC_F2I;
+		DAC_Output_mV = DAC_F2I * 0.8 ;
+		HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, DAC_Output_Raw);
+		Pre_DAC_Raw = DAC_Output_Raw;
+		Pre_DAC_mV = DAC_Output_mV;
+	}
+}
+
+
 /* USER CODE END 4 */
 
 /**
